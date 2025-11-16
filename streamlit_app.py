@@ -150,8 +150,9 @@ def create_map_with_car(image_path, current_pos, direction, destination):
         
         # 산타 이미지를 삼각형 중앙에 추가
         try:
-            # 산타 이미지 로드
-            santa_img = Image.open("/workspaces/blank-app/santa emoji.jpg")
+            # 산타 이미지 로드 (상대 경로)
+            santa_path = os.path.join(os.path.dirname(__file__), "santa emoji.jpg")
+            santa_img = Image.open(santa_path)
             
             # 이미지 크기 조정
             emoji_size = int(size * 0.7)
@@ -196,8 +197,9 @@ def create_map_with_car(image_path, current_pos, direction, destination):
         
         # 선물 상자 이미지를 별 중앙에 추가
         try:
-            # 선물 상자 이미지 로드
-            gift_img = Image.open("/workspaces/blank-app/gift box.jpeg")
+            # 선물 상자 이미지 로드 (상대 경로)
+            gift_path = os.path.join(os.path.dirname(__file__), "gift box.jpeg")
+            gift_img = Image.open(gift_path)
             
             # 이미지 크기 조정
             gift_size = int(star_size * 0.9)
@@ -239,8 +241,9 @@ with col3:
 # 지도 표시 영역
 st.write("---")
 
-# 지도 이미지 경로 (업로드된 이미지를 사용)
-map_image_path = "/workspaces/blank-app/map.png"
+# 지도 이미지 경로 (상대 경로 사용)
+import os
+map_image_path = os.path.join(os.path.dirname(__file__), "map.png")
 
 # 지도와 버튼을 나란히 배치 (지도 크기 축소)
 map_col, button_col = st.columns([1.2, 1])
