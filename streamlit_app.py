@@ -133,8 +133,8 @@ def create_map_with_car(image_path, current_pos, direction, destination):
         x = int(col * grid_width)
         y = int(row * grid_height)
         
-        # 방향에 따른 삼각형 그리기 (차량 모양)
-        size = min(grid_width, grid_height) * 0.2
+        # 방향에 따른 삼각형 그리기 (차량 모양) - 크기 증가
+        size = min(grid_width, grid_height) * 0.35
         
         if direction == 0:  # 북쪽 (위)
             points = [(x, y - size), (x - size/2, y + size/2), (x + size/2, y + size/2)]
@@ -148,19 +148,40 @@ def create_map_with_car(image_path, current_pos, direction, destination):
         # 차량 그리기 (빨간색 삼각형)
         draw.polygon(points, fill='red', outline='darkred')
         
-        # 작은 원도 추가 (차량 본체)
-        circle_size = size * 0.4
-        draw.ellipse([x - circle_size, y - circle_size, x + circle_size, y + circle_size], 
-                     fill='red', outline='darkred')
+        # 산타 이미지를 삼각형 중앙에 추가
+        try:
+            # 산타 이미지 로드
+            santa_img = Image.open("/workspaces/blank-app/santa emoji.jpg")
+            
+            # 이미지 크기 조정
+            emoji_size = int(size * 0.7)
+            santa_img = santa_img.resize((emoji_size, emoji_size), Image.Resampling.LANCZOS)
+            
+            # 이미지를 중앙에 붙이기 위한 위치 계산
+            paste_x = int(x - emoji_size / 2)
+            paste_y = int(y - emoji_size / 2)
+            
+            # 투명도 처리를 위해 RGBA로 변환
+            if santa_img.mode != 'RGBA':
+                santa_img = santa_img.convert('RGBA')
+            
+            # 이미지 붙이기
+            img.paste(santa_img, (paste_x, paste_y), santa_img)
+            
+        except Exception as e:
+            # 이미지 로딩 실패시 흰색 원으로 대체
+            circle_size = size * 0.35
+            draw.ellipse([x - circle_size, y - circle_size, x + circle_size, y + circle_size], 
+                         fill='white', outline='white')
         
-        # 목적지 표시 (초록색 별표)
+        # 목적지 표시 (초록색 별 + 선물 상자 이미지)
         dest_pos = buildings[destination]
         dest_row, dest_col = dest_pos
         dest_x = int(dest_col * grid_width)
         dest_y = int(dest_row * grid_height - grid_height * 0.3)  # 교차점 위쪽에 표시
         
         star_size = size * 0.8
-        # 별 모양 그리기 (간단한 다이아몬드)
+        # 별 모양 그리기 (배경)
         star_points = [
             (dest_x, dest_y - star_size),
             (dest_x + star_size * 0.3, dest_y - star_size * 0.3),
@@ -173,6 +194,30 @@ def create_map_with_car(image_path, current_pos, direction, destination):
         ]
         draw.polygon(star_points, fill='lime', outline='green')
         
+        # 선물 상자 이미지를 별 중앙에 추가
+        try:
+            # 선물 상자 이미지 로드
+            gift_img = Image.open("/workspaces/blank-app/gift box.jpeg")
+            
+            # 이미지 크기 조정
+            gift_size = int(star_size * 0.9)
+            gift_img = gift_img.resize((gift_size, gift_size), Image.Resampling.LANCZOS)
+            
+            # 이미지를 중앙에 붙이기 위한 위치 계산
+            paste_x = int(dest_x - gift_size / 2)
+            paste_y = int(dest_y - gift_size / 2)
+            
+            # 투명도 처리를 위해 RGBA로 변환
+            if gift_img.mode != 'RGBA':
+                gift_img = gift_img.convert('RGBA')
+            
+            # 이미지 붙이기
+            img.paste(gift_img, (paste_x, paste_y), gift_img)
+            
+        except Exception as e:
+            # 이미지 로딩 실패시 별만 표시
+            pass
+        
         return img
     except Exception as e:
         st.error(f"Error loading image: {e}")
@@ -180,6 +225,7 @@ def create_map_with_car(image_path, current_pos, direction, destination):
 
 # 타이틀
 st.title(f"🗺️ Where is the {st.session_state.end}?")
+st.markdown("### 🎅 Santa is very slow. Help Santa go to his place!")
 
 # 게임 정보
 col1, col2, col3 = st.columns(3)
@@ -196,8 +242,8 @@ st.write("---")
 # 지도 이미지 경로 (업로드된 이미지를 사용)
 map_image_path = "/workspaces/blank-app/map.png"
 
-# 지도와 버튼을 나란히 배치
-map_col, button_col = st.columns([2, 1])
+# 지도와 버튼을 나란히 배치 (지도 크기 축소)
+map_col, button_col = st.columns([1.2, 1])
 
 with map_col:
     # 지도 이미지에 차량 표시
@@ -210,6 +256,15 @@ with map_col:
     
     if map_with_car:
         st.image(map_with_car, use_container_width=True)
+    
+    # CSS로 지도 크기 조정
+    st.markdown("""
+    <style>
+    [data-testid="stImage"] {
+        max-height: 500px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 with button_col:
 
@@ -306,8 +361,49 @@ with button_col:
                 st.session_state.message = "❌ No, it's not on your right. Try again!"
                 st.session_state.moves.append("It's on your right ✗")
             st.rerun()
+        
+        # 이동 기록을 버튼 아래에 표시
+        if st.session_state.moves:
+            st.write("---")
+            st.subheader("📝 Your moves:")
+            # 행간 간격을 줄인 스타일 적용
+            moves_html = "<div style='line-height: 1.3;'>"
+            for i, move in enumerate(st.session_state.moves, 1):
+                moves_html += f"<p style='margin: 2px 0;'>{i}. {move}</p>"
+            moves_html += "</div>"
+            st.markdown(moves_html, unsafe_allow_html=True)
     else:
-        st.success("🎉 Completed!")
+        # 축하 효과 (풍선 2번)
+        st.balloons()
+        import time
+        time.sleep(0.5)
+        st.balloons()
+        
+        # 큰 축하 메시지
+        st.markdown("""
+        <div style='text-align: center; padding: 20px;'>
+            <h1 style='color: gold; font-size: 3em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);'>
+                🎊 CONGRATULATIONS! 🎊
+            </h1>
+            <h2 style='color: #4CAF50; font-size: 2em;'>
+                🎉 You Found the {st.session_state.end}! 🎉
+            </h2>
+            <p style='font-size: 1.5em; color: #FF6B6B;'>
+                🎁 Great Job! 🎁
+            </p>
+        </div>
+        """.format(st=st), unsafe_allow_html=True)
+        
+        # 완료 후에도 이동 기록 표시
+        if st.session_state.moves:
+            st.write("---")
+            st.subheader("📝 Your moves:")
+            # 행간 간격을 줄인 스타일 적용
+            moves_html = "<div style='line-height: 1.3;'>"
+            for i, move in enumerate(st.session_state.moves, 1):
+                moves_html += f"<p style='margin: 2px 0;'>{i}. {move}</p>"
+            moves_html += "</div>"
+            st.markdown(moves_html, unsafe_allow_html=True)
 
 # 메시지 표시
 if st.session_state.message:
@@ -316,13 +412,6 @@ if st.session_state.message:
         st.success(st.session_state.message)
     else:
         st.info(st.session_state.message)
-
-# 이동 기록
-if st.session_state.moves:
-    st.write("---")
-    st.subheader("📝 Your moves:")
-    for i, move in enumerate(st.session_state.moves, 1):
-        st.write(f"{i}. {move}")
 
 # 새 게임 버튼
 st.write("---")
